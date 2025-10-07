@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>QR Generator — HD Print & Download</title>
+  <style>
+    body { 
+      font-family: Arial, sans-serif; 
+      background:#f4f6f9; 
+      margin:0; 
+      padding:20px; 
+    }
+    .card { 
+      background:#fff; 
+      width:600px; 
+      margin:20px auto; 
+      padding:18px; 
+      border-radius:10px; 
+      box-shadow:0 6px 20px rgba(0,0,0,0.08); 
+      text-align:center; 
+    }
+    input[type="text"], input[type="file"] { 
+      width:90%; 
+      padding:10px; 
+      /*margin:8px 0; */
+      border-radius:8px; 
+      border:1px solid #ccc; 
+    }
+    button { 
+      padding:10px 16px; 
+      border:0; 
+      border-radius:8px; 
+      cursor:pointer; 
+      background:#be2121; 
+      color:#fff; 
+      margin:6px; 
+    }
+    button:hover { background:#005fa3; }
+    #qrcode { 
+      margin-top:14px; 
+      position:relative; 
+      display:inline-block; 
+      background:#fff; 
+      padding:8px; 
+      border-radius:6px; 
+    }
+    #qrcode img, #qrcode canvas { 
+      max-width:100%; 
+      height:auto; 
+    }
+    #logo { 
+      position:absolute; 
+      top:50%; 
+      left:50%; 
+      transform:translate(-50%,-50%); 
+      max-width:60px; 
+      max-height:60px; 
+      border-radius:6px; 
+      background:#fff; 
+      padding:4px; 
+    }
+  </style>
+</head>
+<body>
+  <h1 style="font-size: 50px;text-align: center;">URL → QR</h1>
+  <div class="card">
+     <img src="https://lbpl.in/wp-content/uploads/2025/09/lbpl_logo-scaled.png" style="width: 30%;"><br><br>
+     <p style="text-align: left; font-weight: 600;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Paste the Link</p>
+    <input id="qrText" type="text" placeholder="Enter link or text here">
+    <p style="text-align: left; font-weight: 600;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Logo</p>
+    <input id="logoUpload" type="file" accept="image/*">
+    <div>
+      <br><br>
+      <button id="generateBtn">Generate QR</button>
+      <button id="printBtn" style="display:none;">Print QR</button>
+      <button id="downloadBtn" style="display:none;">Download HD JPG</button>
+    </div>
+    <div id="qrcode"></div>
+  </div>
+
+  <!-- QRCode library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script>
+    const qrContainer = document.getElementById('qrcode');
+    const generateBtn = document.getElementById('generateBtn');
+    const printBtn = document.getElementById('printBtn');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const logoInput = document.getElementById('logoUpload');
+    let lastText = "";
+
+    generateBtn.addEventListener('click', generateQR);
+    printBtn.addEventListener('click', printQR);
+    downloadBtn.addEventListener('click', downloadHDQR);
+
+    function generateQR() {
+      qrContainer.innerHTML = "";
+      const text = document.getElementById('qrText').value.trim();
+      if (!text) { 
+        alert("Please enter text or a link"); 
+        return; 
+      }
+      lastText = text;
+
+      // Generate QR for preview (250px)
+      new QRCode(qrContainer, {
+        text,
+        width: 250,
+        height: 250,
+        colorDark: "#000000",
+        colorLight: "#ffffff",
+        correctLevel: QRCode.CorrectLevel.H
+      });
+
+      // Add logo if uploaded
+      setTimeout(() => {
+        if (logoInput.files && logoInput.files[0]) {
+          const old = document.getElementById('logo');
+          if (old) old.remove();
+          const logo = document.createElement('img');
+          logo.id = 'logo';
+          logo.src = URL.createObjectURL(logoInput.files[0]);
+          qrContainer.appendChild(logo);
+        }
+        printBtn.style.display = "inline-block";
+        downloadBtn.style.display = "inline-block";
+      }, 200);
+    }
+
+    function printQR() {
+      const qrHTML = qrContainer.outerHTML;
+      const w = window.open("", "_blank", "width=400,height=400");
+      w.document.write(`
+        <html><head><title>Print QR</title>
+        <style>
+          body{display:flex;align-items:center;justify-content:center;height:100%;margin:0;background:#fff;}
+          #qrcode{position:relative;display:inline-block;}
+          #logo{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+            max-width:60px;max-height:60px;border-radius:6px;background:#fff;padding:4px;}
+          @media print { @page { margin: 0 } body{margin:0;} }
+        </style>
+        </head><body>${qrHTML}</body></html>
+      `);
+      w.document.close();
+      w.focus();
+      setTimeout(() => w.print(), 300);
+    }
+
+    function downloadHDQR() {
+  if (!lastText) {
+    alert("Please generate a QR first");
+    return;
+  }
+
+  const size = 1000; // HD QR size
+  const tempCanvas = document.createElement("canvas");
+  const ctx = tempCanvas.getContext("2d");
+  tempCanvas.width = size;
+  tempCanvas.height = size;
+
+  // Generate QR in HD
+  const qrGen = new QRCode(tempCanvas, {
+    text: lastText,
+    width: size,
+    height: size,
+    colorDark: "#000000",
+    colorLight: "#ffffff",
+    correctLevel: QRCode.CorrectLevel.H
+  });
+
+  setTimeout(() => {
+    // Copy the QR onto our HD canvas
+    const qrCanvas = tempCanvas.querySelector("canvas");
+    const finalCanvas = document.createElement("canvas");
+    const fctx = finalCanvas.getContext("2d");
+    finalCanvas.width = size;
+    finalCanvas.height = size;
+
+    // Draw QR
+    fctx.fillStyle = "#fff";
+    fctx.fillRect(0, 0, size, size);
+    fctx.drawImage(qrCanvas, 0, 0);
+
+    // Draw logo if present
+    if (logoInput.files && logoInput.files[0]) {
+      const img = new Image();
+      img.onload = function() {
+        // FIX: keep logo similar to preview size (~60px on 250px QR = ~240px on 1000px QR)
+        const logoSize = size * 0.24; // proportional but not oversized
+        const x = (size - logoSize) / 2;
+        const y = (size - logoSize) / 2;
+
+        // white square behind logo
+        fctx.fillStyle = "#ffffff";
+        fctx.fillRect(x - 8, y - 8, logoSize + 16, logoSize + 16);
+
+        fctx.drawImage(img, x, y, logoSize, logoSize);
+
+        saveCanvas(finalCanvas);
+      };
+      img.src = URL.createObjectURL(logoInput.files[0]);
+    } else {
+      saveCanvas(finalCanvas);
+    }
+  }, 300);
+}
+
+
+    function saveCanvas(canvas) {
+      const link = document.createElement("a");
+      link.download = "qr-code-hd.jpg";
+      link.href = canvas.toDataURL("image/jpeg", 1.0); // max quality
+      link.click();
+    }
+  </script>
+</body>
+</html>
